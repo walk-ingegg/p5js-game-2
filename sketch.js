@@ -1,6 +1,9 @@
+const moveIntensity = 100;
+
 let wavePoint;
 
 function setup() {
+  frameRate(60);
   createCanvas(800, 800);
   background(0);
   wavePoint = new WavePoint(50, 50, 2, 30);
@@ -28,18 +31,31 @@ class WavePoint {
     this.dragging = false;
   }
 
-  draw() {
+  update() {
     if (this.dragging) {
-      const mouseAreaX = width / 2;
-      const mouseAreaY = height / 2;
       let moveX = this.x - mouseX;
       let moveY = this.y - mouseY;
-
-      moveX = map(moveX, -mouseAreaX, mouseAreaX, -this.speed, this.speed);
-      moveY = map(moveY, -mouseAreaY, mouseAreaY, -this.speed, this.speed);
+      moveX = map(
+        moveX,
+        -moveIntensity,
+        moveIntensity,
+        -this.speed,
+        this.speed
+      );
+      moveY = map(
+        moveY,
+        -moveIntensity,
+        moveIntensity,
+        -this.speed,
+        this.speed
+      );
       this.x -= moveX;
       this.y -= moveY;
     }
+  }
+
+  draw() {
+    this.update();
     ellipse(this.x, this.y, 10);
   }
 
@@ -57,19 +73,21 @@ class WavePoint {
   notPressed() {
     this.dragging = false;
   }
-
-  movePositionKey() {
-    if (keyIsDown(RIGHT_ARROW)) {
-      this.x += this.speed;
-    }
-    if (keyIsDown(LEFT_ARROW)) {
-      this.x -= this.speed;
-    }
-    if (keyIsDown(UP_ARROW)) {
-      this.y -= this.speed;
-    }
-    if (keyIsDown(DOWN_ARROW)) {
-      this.y += this.speed;
-    }
-  }
 }
+
+const map = (target_num, in_min, in_max, out_min, out_max) => {
+  if (target_num > in_max) {
+    target_num = in_max;
+  } else if (target_num < in_min) {
+    target_num = in_min;
+  }
+
+  const input_diff = in_max - target_num;
+  const input_range = in_max - in_min;
+  const output_range = out_max - out_min;
+  const percentage = input_diff / input_range;
+  const out_diff = percentage * output_range;
+  const rs = out_max - out_diff;
+
+  return rs;
+};
