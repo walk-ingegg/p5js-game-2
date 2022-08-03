@@ -1,62 +1,94 @@
 const moveIntensity = 100;
 
-let wavePoint;
+let wavePoints = [];
 
 function setup() {
-  frameRate(60);
+  frameRate(30);
   createCanvas(800, 800);
+  noStroke();
   background(0);
-  wavePoint = new WavePoint(50, 50, 2, 30);
+  wavePoints = new WavePoint(4, 30);
 }
 
 function draw() {
-  background(0);
-  wavePoint.draw();
+  wavePoints.draw();
 }
 
 function mousePressed() {
-  wavePoint.pressed();
+  wavePoints.pressed();
 }
 
 function mouseReleased() {
-  wavePoint.notPressed();
+  wavePoints.notPressed();
 }
 
 class WavePoint {
-  constructor(x, y, speed, collisionSize) {
-    this.x = x;
-    this.y = y;
+  constructor(speed, collisionSize) {
+    this.x = random(width);
+    this.y = random(height);
     this.speed = speed;
     this.collisionSize = collisionSize / 2;
     this.dragging = false;
+    this.waves = [];
   }
 
-  update() {
+  updateMove() {
     if (this.dragging) {
       let moveX = this.x - mouseX;
       let moveY = this.y - mouseY;
-      moveX = map(
-        moveX,
-        -moveIntensity,
-        moveIntensity,
-        -this.speed,
-        this.speed
-      );
-      moveY = map(
-        moveY,
-        -moveIntensity,
-        moveIntensity,
-        -this.speed,
-        this.speed
-      );
+      const normalizedMove = this.vectorLength(moveX, moveY);
+
+      moveX = (moveX / normalizedMove) * this.speed;
+      moveY = (moveY / normalizedMove) * this.speed;
+
       this.x -= moveX;
       this.y -= moveY;
     }
   }
 
+  update() {
+    this.make();
+    this.waves.forEach((wave) => {
+      wave.draw();
+    });
+    this.deleteOutWave();
+  }
+
+  make() {
+    const col = this.defineColor(220, 4);
+    const wave = new WaveGenerator(this.x, this.y, 16, col);
+    this.waves.push(wave);
+  }
+
+  defineColor(colRange, colCycle) {
+    let ellipseColor = cos(frameCount / colCycle) + 1;
+    ellipseColor = map(ellipseColor, -1, 1, colRange, 64);
+    return ellipseColor;
+  }
+
+  deleteOutWave() {
+    const threshold = width * 3;
+    this.waves.forEach((wave) => {
+      if (wave.rad > threshold) {
+        this.delete(wave);
+      }
+    });
+  }
+
+  delete(del) {
+    this.waves = this.waves.filter((wave) => {
+      return wave !== del;
+    });
+  }
+
   draw() {
+    this.updateMove();
     this.update();
-    ellipse(this.x, this.y, 10);
+  }
+
+  vectorLength(vx, vy) {
+    const vectorLen = Math.sqrt(vx ** 2 + vy ** 2);
+    return vectorLen;
   }
 
   pressed() {
@@ -75,19 +107,24 @@ class WavePoint {
   }
 }
 
-const map = (target_num, in_min, in_max, out_min, out_max) => {
-  if (target_num > in_max) {
-    target_num = in_max;
-  } else if (target_num < in_min) {
-    target_num = in_min;
+class WaveGenerator {
+  constructor(x, y, speed, col) {
+    this.x = x;
+    this.y = y;
+    this.rad = 0;
+    this.speed = speed;
+    this.col = col;
   }
 
-  const input_diff = in_max - target_num;
-  const input_range = in_max - in_min;
-  const output_range = out_max - out_min;
-  const percentage = input_diff / input_range;
-  const out_diff = percentage * output_range;
-  const rs = out_max - out_diff;
+  update() {
+    this.rad += this.speed;
+  }
 
-  return rs;
-};
+  draw() {
+    this.update();
+    push();
+    fill(this.col);
+    ellipse(this.x, this.y, this.rad);
+    pop();
+  }
+}
